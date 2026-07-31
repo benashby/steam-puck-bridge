@@ -1,0 +1,16 @@
+[Unit]
+Description=Steam Controller Puck to virtual gamepad bridge
+Documentation=file://%h/projects/steam-puck-bridge/README.md
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/steam-puck-bridge
+Restart=on-failure
+RestartSec=2
+
+# The daemon only needs /dev/hidraw* (0666 via steam-devices udev rules)
+# and /dev/uinput (uaccess ACL for the active seat on Bazzite).
+# Runs entirely unprivileged as the login user.
+
+[Install]
+WantedBy=default.target
