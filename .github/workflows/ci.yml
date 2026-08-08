@@ -18,7 +18,7 @@ jobs:
       matrix:
         cc: [gcc, clang]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Build with -Werror
         run: make CC=${{ matrix.cc }} CFLAGS="-O2 -std=c99 -Wall -Wextra -Werror"
@@ -40,7 +40,7 @@ jobs:
     name: static analysis
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       # Advisory only. The analyzer cannot prove that the global `nslots` stays
       # within MAX_SLOTS across translation-unit boundaries and reports a false
@@ -64,7 +64,7 @@ jobs:
     name: config lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       # verify resolves ExecStart= and fails if the binary isn't there, so
       # put a stand-in at the path the unit expects.
