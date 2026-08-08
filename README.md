@@ -28,23 +28,66 @@ distro-specific beyond two udev rules (see
 
 ## Quick start
 
+Install a compiler and the kernel UAPI headers — that's the entire dependency
+list, there are no libraries beyond libc:
+
+| Distro | Build dependencies |
+|---|---|
+| **Arch** / Manjaro / EndeavourOS | `sudo pacman -S --needed base-devel` |
+| **Debian** / Ubuntu / Pop!_OS / Mint | `sudo apt install build-essential linux-libc-dev` |
+| **Fedora** / RHEL / Nobara | `sudo dnf install gcc make kernel-headers` |
+| **openSUSE** | `sudo zypper install gcc make linux-glibc-devel` |
+| **Bazzite** / SteamOS / ChimeraOS | already present — nothing to install |
+
+Then, on any of them:
+
 ```sh
 git clone https://github.com/benashby/steam-puck-bridge
 cd steam-puck-bridge
 make enable          # build, install to ~/.local, start the systemd user unit
-```
-
-On a distro that doesn't already ship Valve's `steam-devices` udev rules
-(anything other than Bazzite / SteamOS / ChimeraOS / Nobara, roughly), also:
-
-```sh
-sudo make install-udev
-# then unplug and replug the dongle
+sudo make install-udev   # device access rules — see below
+# unplug and replug the dongle so the new rules apply
 ```
 
 Turn the controller on. `/proc/bus/input/devices` should gain a
-`Microsoft X-Box 360 pad`. See [Build & install](#build--install) for the
-details and [Debugging](#debugging) when it doesn't.
+`Microsoft X-Box 360 pad`, and games/ES-DE pick it up immediately.
+
+### Do I need `make install-udev`?
+
+You need it unless your distro already grants your user access to Valve HID
+devices and `/dev/uinput`. Check:
+
+```sh
+getfacl /dev/uinput | grep -q "user:$USER:rw" && echo "uinput OK" || echo "uinput NEEDS RULES"
+```
+
+- **Bazzite, SteamOS, ChimeraOS, Nobara** — already set up, skip it.
+- **Arch, Debian/Ubuntu, Fedora, openSUSE** — you need rules. Either run
+  `sudo make install-udev` (ships
+  [`udev/60-steam-puck-bridge.rules`](udev/60-steam-puck-bridge.rules), which
+  grants access to the locally logged-in user via `uaccess`), or install your
+  distro's `steam-devices` package and add a `uinput` rule yourself.
+
+The `uinput` kernel module does not need to be loaded beforehand — the rules
+use `static_node=uinput`, so opening the device autoloads it.
+
+### System-wide / packaged install
+
+For a distro package rather than a per-user one, the Makefile does a normal
+staged install and rewrites the unit's `ExecStart=` to match:
+
+```sh
+make install DESTDIR="$pkgdir" PREFIX=/usr \
+             UNITDIR=/usr/lib/systemd/user SKIP_RELOAD=1
+make install-udev DESTDIR="$pkgdir" UDEVDIR=/usr/lib/udev/rules.d SKIP_RELOAD=1
+```
+
+The unit stays a **user** unit either way — the daemon needs the seat's
+`uaccess` ACL on `/dev/uinput`, so running it as a system service under
+`root` or a `DynamicUser` is not the intended deployment.
+
+See [Build & install](#build--install) for all targets and
+[Debugging](#debugging) when something doesn't work.
 
 ## Why this needs to exist
 
@@ -266,7 +309,7 @@ tracker. Release notes live in [CHANGELOG.md](CHANGELOG.md).
 
 ```
 src/steam-puck-bridge.c              the whole daemon (~850 lines, plain C)
-systemd/steam-puck-bridge.service    user unit (WantedBy=default.target)
+systemd/steam-puck-bridge.service.in user unit template (@BINDIR@ substituted at install)
 udev/60-steam-puck-bridge.rules      device access for non-Valve-rules distros
 Makefile                             build / install / enable / uninstall / check
 docs/protocol.md                     Triton wire-format reference

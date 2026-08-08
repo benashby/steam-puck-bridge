@@ -9,19 +9,32 @@ INSTALL   ?= install
 
 BIN       := steam-puck-bridge
 SRC       := src/steam-puck-bridge.c
+UNIT_IN   := systemd/steam-puck-bridge.service.in
 UNIT      := systemd/steam-puck-bridge.service
 RULES     := udev/60-steam-puck-bridge.rules
+
+# Path baked into the unit's ExecStart=. A home install keeps systemd's %h
+# specifier so one unit file works for any user; a system-wide install (a
+# distro package, PREFIX=/usr) needs the real absolute path instead.
+ifeq ($(strip $(BINDIR)),$(strip $(HOME)/.local/bin))
+UNIT_BINDIR := %h/.local/bin
+else
+UNIT_BINDIR := $(BINDIR)
+endif
 
 # Set SKIP_RELOAD=1 for staged/packaging installs, where poking the running
 # systemd instance is wrong (and usually impossible).
 SKIP_RELOAD ?=
 
-all: $(BIN)
+all: $(BIN) $(UNIT)
 
 $(BIN): $(SRC)
 	$(CC) $(CFLAGS) -o $@ $<
 
-install: $(BIN)
+$(UNIT): $(UNIT_IN) Makefile
+	sed 's|@BINDIR@|$(UNIT_BINDIR)|g' $< > $@
+
+install: $(BIN) $(UNIT)
 	$(INSTALL) -Dm755 $(BIN) $(DESTDIR)$(BINDIR)/$(BIN)
 	$(INSTALL) -Dm644 $(UNIT) $(DESTDIR)$(UNITDIR)/steam-puck-bridge.service
 ifeq ($(SKIP_RELOAD),)
@@ -60,7 +73,7 @@ check:
 	clang $(CFLAGS) -Werror -c -o /dev/null $(SRC)
 
 clean:
-	rm -f $(BIN)
+	rm -f $(BIN) $(UNIT)
 
 help:
 	@echo 'targets:'
