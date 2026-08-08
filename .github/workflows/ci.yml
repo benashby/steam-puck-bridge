@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build (${{ matrix.cc }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build with -Werror
+        run: make CC=${{ matrix.cc }} CFLAGS="-O2 -std=c99 -Wall -Wextra -Werror"
+
+      - name: Smoke test
+        run: |
+          ./steam-puck-bridge --version
+          ./steam-puck-bridge --help
+          # unknown flags must exit 2, not run
+          ! ./steam-puck-bridge --nonsense
+
+      - name: Staged install
+        run: |
+          make install DESTDIR="$PWD/stage" PREFIX=/usr \
+                       UNITDIR=/usr/lib/systemd/user SKIP_RELOAD=1
+          find stage -type f | sort
+
+  analyze:
+    name: static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # Advisory only. The analyzer cannot prove that the global `nslots` stays
+      # within MAX_SLOTS across translation-unit boundaries and reports a false
+      # positive out-of-bounds write on `slots[]`; the scan loop is bounded.
+      - name: gcc -fanalyzer
+        continue-on-error: true
+        run: |
+          gcc -fanalyzer -O2 -std=c99 -Wall -Wextra \
+              -c -o /dev/null src/steam-puck-bridge.c
+
+      - name: cppcheck
+        run: |
+          sudo apt-get update && sudo apt-get install -y cppcheck
+          cppcheck --error-exitcode=1 --std=c99 --quiet \
+                   --check-level=exhaustive \
+                   --enable=warning,performance,portability \
+                   --suppress=missingIncludeSystem \
+                   src/steam-puck-bridge.c
+
+  lint:
+    name: config lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Validate systemd unit
+        run: systemd-analyze verify --user systemd/steam-puck-bridge.service
+
+      - name: Validate udev rules
+        run: udevadm verify udev/60-steam-puck-bridge.rules

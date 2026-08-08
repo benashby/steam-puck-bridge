@@ -1,2 +1,18 @@
+# build output
 /steam-puck-bridge
 *.o
+*.d
+
+# debug / analysis artifacts
+core
+core.*
+vgcore.*
+*.log
+compile_commands.json
+.cache/
+
+# editors
+*.swp
+*~
+.vscode/
+.idea/

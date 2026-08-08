@@ -1,0 +1,28 @@
+# steam-puck-bridge — device access rules
+#
+# Only needed on distributions that do NOT already ship Valve's `steam-devices`
+# package and a uinput rule (Bazzite, SteamOS, ChimeraOS and most gaming images
+# already do — check with `getfacl /dev/uinput` before installing this).
+#
+#   sudo install -Dm644 udev/60-steam-puck-bridge.rules \
+#        /etc/udev/rules.d/60-steam-puck-bridge.rules
+#   sudo udevadm control --reload-rules && sudo udevadm trigger
+#
+# These grant access to the *locally logged-in* user only, via systemd-logind's
+# uaccess ACL — not world-writable. Replug the dongle after reloading.
+
+# --- Valve Triton-family HID interfaces (the raw controller protocol) --------
+# 1302 wired Triton, 1303 BLE Triton, 1304 Proteus dongle, 1305 Nereid dongle.
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="28de", ATTRS{idProduct}=="1302", TAG+="uaccess"
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="28de", ATTRS{idProduct}=="1303", TAG+="uaccess"
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="28de", ATTRS{idProduct}=="1304", TAG+="uaccess"
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="28de", ATTRS{idProduct}=="1305", TAG+="uaccess"
+
+# Bluetooth-attached Triton: no USB idVendor/idProduct to match on, so match the
+# HID bus id string (bus:VID:PID) that the hid core exports instead.
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", KERNELS=="*:28DE:1303.*", TAG+="uaccess"
+
+# --- /dev/uinput (creating the virtual X360 pad) ----------------------------
+# static_node= is required because the uinput module is often not loaded at the
+# time rules are processed, so there is no device to tag yet.
+KERNEL=="uinput", SUBSYSTEM=="misc", OPTIONS+="static_node=uinput", TAG+="uaccess"

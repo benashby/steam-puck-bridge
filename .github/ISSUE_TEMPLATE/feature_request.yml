@@ -1,0 +1,41 @@
+name: Feature request
+description: Propose a change or new capability
+title: "[feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please read the [Scope section of CONTRIBUTING.md](https://github.com/benashby/steam-puck-bridge/blob/main/CONTRIBUTING.md#scope)
+        first — it lists a few things that are deliberately out of scope
+        (config files, GUIs, trackpad/IMU as X360 axes).
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the situation you're in, not just the feature you want.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      description: |
+        Including "do it outside this daemon" — e.g. an evdev remapper, a udev
+        rule, or Steam Input.
+
+  - type: checkboxes
+    id: deps
+    attributes:
+      label: Constraints
+      options:
+        - label: This can be done without adding a dependency beyond libc

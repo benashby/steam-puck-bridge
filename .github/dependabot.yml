@@ -1,0 +1,10 @@
+version: 2
+updates:
+  # The daemon itself has no dependencies beyond libc; this only keeps the
+  # CI actions current.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "ci"

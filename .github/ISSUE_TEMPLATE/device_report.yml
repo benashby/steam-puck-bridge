@@ -1,0 +1,59 @@
+name: Device / distro report
+description: Tell me whether it works on hardware or a distro I don't have
+title: "[device] "
+labels: ["hardware-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is the single most useful thing you can contribute. I only have a
+        Proteus dongle on Bazzite; everything else is untested. Reports that it
+        *works* are as valuable as reports that it doesn't.
+
+  - type: dropdown
+    id: works
+    attributes:
+      label: Does it work?
+      options:
+        - Yes, fully (buttons, sticks, triggers, rumble)
+        - Mostly — some things wrong (describe below)
+        - No, not at all
+    validations:
+      required: true
+
+  - type: input
+    id: hardware
+    attributes:
+      label: Hardware
+      description: VID:PID plus what you'd call the thing.
+      placeholder: "28de:1305 — Nereid dongle, Steam Controller 2"
+    validations:
+      required: true
+
+  - type: input
+    id: distro
+    attributes:
+      label: Distribution, version, kernel
+      placeholder: "Arch Linux, 6.17.1-arch1-1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: udev
+    attributes:
+      label: udev setup
+      options:
+        - Distro already had access (steam-devices or equivalent)
+        - I installed udev/60-steam-puck-bridge.rules from this repo
+        - I had to write my own rules (please paste them below)
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: |
+        What worked, what didn't. If anything was wrong, paste
+        `grep -il 28de /sys/class/hidraw/*/device/uevent | xargs -r grep -H HID_`
+        and a `steam-puck-bridge --dump` capture.

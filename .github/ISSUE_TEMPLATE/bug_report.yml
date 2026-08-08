@@ -1,0 +1,98 @@
+name: Bug report
+description: Something is broken — wrong buttons, no device, crash, rumble dead
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. A `--dump` capture solves most input bugs
+        immediately, so please include one if you can.
+
+        **Security issues go to [SECURITY.md](https://github.com/benashby/steam-puck-bridge/blob/main/SECURITY.md), not here.**
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you expect, and what did you get instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. systemctl --user start steam-puck-bridge
+        2. Press the Steam button to wake the controller
+        3. ...
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `steam-puck-bridge --version`, or the commit hash.
+    validations:
+      required: true
+
+  - type: input
+    id: distro
+    attributes:
+      label: Distribution and kernel
+      description: Output of `uname -r`, plus the distro and version.
+      placeholder: "Bazzite 42 (Fedora Atomic), 6.16.3-201.fc42.x86_64"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: hardware
+    attributes:
+      label: Hardware
+      options:
+        - Proteus dongle (28de:1304)
+        - Nereid dongle (28de:1305)
+        - Triton, wired USB (28de:1302)
+        - Triton, Bluetooth LE (28de:1303)
+        - Not sure / something else
+    validations:
+      required: true
+
+  - type: textarea
+    id: devices
+    attributes:
+      label: Detected HID devices
+      description: |
+        Output of:
+        ```sh
+        grep -il 28de /sys/class/hidraw/*/device/uevent | xargs -r grep -H HID_
+        ```
+      render: shell
+
+  - type: textarea
+    id: journal
+    attributes:
+      label: Daemon log
+      description: "`journalctl --user -u steam-puck-bridge -n 100 --no-pager`"
+      render: shell
+
+  - type: textarea
+    id: dump
+    attributes:
+      label: Protocol dump
+      description: |
+        A few seconds of `steam-puck-bridge --dump` covering the broken input.
+        Stop the service first so the debug run owns the device.
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: Steam was not running (or I passed `--no-steam-check`)
+          required: true
+        - label: I searched existing issues
+          required: true

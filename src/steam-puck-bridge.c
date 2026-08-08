@@ -55,6 +55,11 @@
  */
 
 #define _GNU_SOURCE
+
+#ifndef SPB_VERSION
+#define SPB_VERSION "0.1.0"
+#endif
+
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
@@ -655,6 +660,28 @@ static void close_all(void)
 
 /* ------------------------------------------------------------------ */
 
+static void usage(FILE *out, const char *argv0)
+{
+    fprintf(out,
+        "usage: %s [--dump] [--no-steam-check]\n"
+        "\n"
+        "Bridges the 2nd-gen Steam Controller (\"Puck\") from raw hidraw to a\n"
+        "virtual Microsoft X-Box 360 pad on /dev/uinput, so it works as a\n"
+        "normal gamepad without Steam running.\n"
+        "\n"
+        "options:\n"
+        "  --dump             protocol debug: hexdump and parse every report;\n"
+        "                     no virtual pad is created\n"
+        "  --no-steam-check   keep running even when a Steam client is up\n"
+        "                     (default: back off and let Steam own the device)\n"
+        "  -h, --help         this text\n"
+        "  -V, --version      print version and exit\n"
+        "\n"
+        "Logs to stdout; normally run via the systemd user unit.\n"
+        "Home page: <https://github.com/benashby/steam-puck-bridge>\n",
+        argv0);
+}
+
 int main(int argc, char **argv)
 {
     for (int i = 1; i < argc; i++) {
@@ -662,9 +689,16 @@ int main(int argc, char **argv)
             opt_dump = true;
         else if (strcmp(argv[i], "--no-steam-check") == 0)
             opt_steam_check = false;
-        else {
-            fprintf(stderr,
-                "usage: %s [--dump] [--no-steam-check]\n", argv[0]);
+        else if (strcmp(argv[i], "--help") == 0 ||
+                 strcmp(argv[i], "-h") == 0) {
+            usage(stdout, argv[0]);
+            return 0;
+        } else if (strcmp(argv[i], "--version") == 0 ||
+                   strcmp(argv[i], "-V") == 0) {
+            printf("steam-puck-bridge %s\n", SPB_VERSION);
+            return 0;
+        } else {
+            usage(stderr, argv[0]);
             return 2;
         }
     }
