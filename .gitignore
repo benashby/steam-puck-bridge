@@ -1,6 +1,7 @@
 # build output
 /steam-puck-bridge
 /systemd/steam-puck-bridge.service
+/.bindir-stamp
 *.o
 *.d
 
