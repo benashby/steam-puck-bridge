@@ -4,7 +4,7 @@ Documentation=https://github.com/benashby/steam-puck-bridge
 
 [Service]
 Type=simple
-ExecStart=%h/.local/bin/steam-puck-bridge
+ExecStart=@BINDIR@/steam-puck-bridge
 Restart=on-failure
 RestartSec=2
 

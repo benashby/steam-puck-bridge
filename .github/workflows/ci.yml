@@ -30,11 +30,27 @@ jobs:
           # unknown flags must exit 2, not run
           ! ./steam-puck-bridge --nonsense
 
-      - name: Staged install
+      - name: Staged system-wide install
         run: |
           make install DESTDIR="$PWD/stage" PREFIX=/usr \
                        UNITDIR=/usr/lib/systemd/user SKIP_RELOAD=1
           find stage -type f | sort
+          # The unit's ExecStart= must point at where we actually installed
+          # the binary, or the package starts and immediately fails.
+          unit=stage/usr/lib/systemd/user/steam-puck-bridge.service
+          grep -qx 'ExecStart=/usr/bin/steam-puck-bridge' "$unit" \
+            || { echo "::error::ExecStart does not match BINDIR"; \
+                 grep ExecStart "$unit"; exit 1; }
+          test -x stage/usr/bin/steam-puck-bridge
+
+      - name: Staged home install
+        run: |
+          make clean
+          make install DESTDIR="$PWD/stage-home" SKIP_RELOAD=1
+          unit="stage-home$HOME/.config/systemd/user/steam-puck-bridge.service"
+          grep -qx 'ExecStart=%h/.local/bin/steam-puck-bridge' "$unit" \
+            || { echo "::error::home install lost the %h specifier"; \
+                 grep ExecStart "$unit"; exit 1; }
 
   analyze:
     name: static analysis
@@ -70,6 +86,7 @@ jobs:
       # put a stand-in at the path the unit expects.
       - name: Validate systemd unit
         run: |
+          make systemd/steam-puck-bridge.service
           install -Dm755 /bin/true ~/.local/bin/steam-puck-bridge
           systemd-analyze verify --user systemd/steam-puck-bridge.service
 
