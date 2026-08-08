@@ -53,10 +53,11 @@ ifeq ($(SKIP_RELOAD),)
 	udevadm control --reload-rules
 endif
 
-# What CI runs.
+# What CI runs. Must be a real optimizing compile, not -fsyntax-only:
+# -Wmaybe-uninitialized and friends only fire after the optimizer runs.
 check:
-	gcc   $(CFLAGS) -Werror -fsyntax-only $(SRC)
-	clang $(CFLAGS) -Werror -fsyntax-only $(SRC)
+	gcc   $(CFLAGS) -Werror -c -o /dev/null $(SRC)
+	clang $(CFLAGS) -Werror -c -o /dev/null $(SRC)
 
 clean:
 	rm -f $(BIN)

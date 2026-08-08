@@ -66,8 +66,12 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # verify resolves ExecStart= and fails if the binary isn't there, so
+      # put a stand-in at the path the unit expects.
       - name: Validate systemd unit
-        run: systemd-analyze verify --user systemd/steam-puck-bridge.service
+        run: |
+          install -Dm755 /bin/true ~/.local/bin/steam-puck-bridge
+          systemd-analyze verify --user systemd/steam-puck-bridge.service
 
       - name: Validate udev rules
         run: udevadm verify udev/60-steam-puck-bridge.rules

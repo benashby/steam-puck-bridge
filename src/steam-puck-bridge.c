@@ -227,7 +227,12 @@ static bool parse_uevent(const char *hidraw_name, uint16_t *vid, uint16_t *pid, 
     if (!f)
         return false;
 
+    /* Write every out-param up front: callers only look at them when we
+     * return true, but gcc can't correlate that with the return value and
+     * warns under -O2 -Wmaybe-uninitialized. */
     bool have_id = false;
+    *vid = 0;
+    *pid = 0;
     *iface = -1;
     while (fgets(line, sizeof(line), f)) {
         unsigned bus, v, p;
