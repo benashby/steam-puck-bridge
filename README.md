@@ -1,5 +1,18 @@
 # steam-puck-bridge — Steam Controller 2 ("Puck") driver for Linux without Steam
 
+> **On Linux 7.3 and later the kernel supports this controller natively, so
+> you don't need this project. It stays here for older kernels and is
+> archived.**
+>
+> Linux 7.3 added 2026 Steam Controller support to `hid-steam`. It binds the
+> puck (`28de:1304`), the wired (`1302`) and BLE (`1303`) controllers and the
+> Steam Machine receiver (`1305`). It turns lizard mode off itself and gives
+> you a gamepad and a battery level without Steam. If you run the bridge on
+> 7.3 anyway, it should take over the way Steam does: it opens the driver's
+> client hidraw node, and hid-steam then drops its own gamepad. I read that
+> from the driver source and haven't tested it on hardware. Rumble, back
+> paddles and SDL2 mappings of the kernel pad weren't checked.
+
 [![CI](https://github.com/benashby/steam-puck-bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/benashby/steam-puck-bridge/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Platform: Linux](https://img.shields.io/badge/platform-Linux-informational)
@@ -102,7 +115,8 @@ I would be glad to retire this project):
 
 | Layer | Supports the Puck (`28de:1304`)? |
 |---|---|
-| Kernel `hid-steam` (incl. mainline) | ❌ binds only `1102`/`1142`/`1205` (SC1 wired/dongle, Deck) — `hid-generic` claims the Puck and it stays in lizard mode |
+| Kernel `hid-steam` before 7.3 | ❌ binds only `1102`/`1142`/`1205` (SC1 wired/dongle, Deck), so `hid-generic` claims the Puck and it stays in lizard mode |
+| Kernel `hid-steam` 7.3 and later | ✅ binds `1302` to `1305` natively (see the notice at the top) |
 | SDL2 (2.32.x) | ❌ hidapi Steam driver covers SC1 only |
 | SDL3 ≥ 3.5 | ✅ full driver (`SDL_hidapi_steam_triton.c`) — but only helps SDL3 apps, and e.g. ES-DE links SDL2 |
 | [SteamlessController](https://github.com/ddeverill/SteamlessController) | ❌ Windows-only (ViGEmBus kernel driver, Win32, WinRT) — but its README documents the lizard-mode mechanism nicely |
@@ -280,15 +294,16 @@ Only if you can get access to `/dev/uinput` and `/dev/hidraw*`, which the
 need your own rules.
 
 **Why not just patch `hid-steam`?**
-That would be the right long-term fix and someone should do it. This is
-userspace, needs no kernel build, no signed module, and works today on
-immutable distros where layering a module is painful.
+Someone did: Linux 7.3 ships it (see the notice at the top). On older
+kernels this bridge still helps. It is userspace, needs no kernel build or
+signed module, and works on immutable distros where layering a module is
+painful.
 
 ## Related projects
 
 | Project | Platform | Notes |
 |---|---|---|
-| [`hid-steam`](https://www.kernel.org/doc/html/latest/) (in-kernel) | Linux | Handles SC1 and the Steam Deck. Doesn't bind the Puck. |
+| [`hid-steam`](https://www.kernel.org/doc/html/latest/) (in-kernel) | Linux | Handles SC1 and the Steam Deck, and the Puck from Linux 7.3. Older kernels don't bind the Puck. |
 | [SDL 3](https://github.com/libsdl-org/SDL) `SDL_hidapi_steam_triton.c` | any | Full driver, but only SDL3 apps benefit. Source of this project's protocol reference. |
 | [SteamlessController](https://github.com/ddeverill/SteamlessController) | Windows | Same idea via ViGEmBus. Its README explains lizard mode well. |
 | [`xboxdrv`](https://github.com/xboxdrv/xboxdrv) | Linux | Historical precedent for the userspace-driver-to-uinput pattern. |
