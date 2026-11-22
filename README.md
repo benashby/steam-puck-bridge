@@ -1,17 +1,15 @@
 # steam-puck-bridge — Steam Controller 2 ("Puck") driver for Linux without Steam
 
-> **On Linux 7.3 and later the kernel supports this controller natively, so
-> you don't need this project. It stays here for older kernels and is
-> archived.**
->
-> Linux 7.3 added 2026 Steam Controller support to `hid-steam`. It binds the
-> puck (`28de:1304`), the wired (`1302`) and BLE (`1303`) controllers and the
-> Steam Machine receiver (`1305`). It turns lizard mode off itself and gives
-> you a gamepad and a battery level without Steam. If you run the bridge on
-> 7.3 anyway, it should take over the way Steam does: it opens the driver's
-> client hidraw node, and hid-steam then drops its own gamepad. I read that
-> from the driver source and haven't tested it on hardware. Rumble, back
-> paddles and SDL2 mappings of the kernel pad weren't checked.
+> **Still useful on Linux 7.3 and later.** The kernel's `hid-steam` now binds
+> the puck (`28de:1304`), the wired (`1302`) and BLE (`1303`) controllers and
+> the Steam Machine receiver (`1305`), turns lizard mode off and gives you a
+> gamepad without Steam. But that pad keeps Valve's IDs, and games that only
+> know Xbox pads don't map it: on 7.3.4, Hollow Knight: Silksong (Unity)
+> ignored it entirely and only reacted to lizard mode's keys. The bridge
+> fixes that on 7.3 too. It opens the driver's client hidraw node the way
+> Steam does, `hid-steam` drops its own gamepad and keeps lizard mode off,
+> and games see a Microsoft X-Box 360 pad. Tested with the puck on 7.3.4,
+> 2026-11-22.
 
 [![CI](https://github.com/benashby/steam-puck-bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/benashby/steam-puck-bridge/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -116,7 +114,7 @@ I would be glad to retire this project):
 | Layer | Supports the Puck (`28de:1304`)? |
 |---|---|
 | Kernel `hid-steam` before 7.3 | ❌ binds only `1102`/`1142`/`1205` (SC1 wired/dongle, Deck), so `hid-generic` claims the Puck and it stays in lizard mode |
-| Kernel `hid-steam` 7.3 and later | ✅ binds `1302` to `1305` natively (see the notice at the top) |
+| Kernel `hid-steam` 7.3 and later | ⚠️ binds `1302` to `1305` and gives a gamepad, but with Valve's IDs, which Xbox-only games (Unity's input) don't map; the bridge replaces it with an X-Box 360 pad (see the notice at the top) |
 | SDL2 (2.32.x) | ❌ hidapi Steam driver covers SC1 only |
 | SDL3 ≥ 3.5 | ✅ full driver (`SDL_hidapi_steam_triton.c`) — but only helps SDL3 apps, and e.g. ES-DE links SDL2 |
 | [SteamlessController](https://github.com/ddeverill/SteamlessController) | ❌ Windows-only (ViGEmBus kernel driver, Win32, WinRT) — but its README documents the lizard-mode mechanism nicely |
@@ -294,8 +292,9 @@ Only if you can get access to `/dev/uinput` and `/dev/hidraw*`, which the
 need your own rules.
 
 **Why not just patch `hid-steam`?**
-Someone did: Linux 7.3 ships it (see the notice at the top). On older
-kernels this bridge still helps. It is userspace, needs no kernel build or
+Someone did: Linux 7.3 ships it (see the notice at the top). The kernel's
+pad still carries Valve's IDs, though, so games that only map Xbox pads
+need this bridge there too, and on older kernels it is the only option. It is userspace, needs no kernel build or
 signed module, and works on immutable distros where layering a module is
 painful.
 
