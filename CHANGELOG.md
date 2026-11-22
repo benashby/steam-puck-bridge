@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The README no longer says Linux 7.3 makes the bridge unnecessary. The
+  kernel's puck gamepad has Valve's IDs, which Xbox-only games such as
+  Unity titles don't map; the bridge takes over from it on 7.3.4 and those
+  games work (tested with the puck, 2026-11-22). The project is no longer
+  archived.
+
 ## [0.1.0] - 2026-08-08
 
 First public release.
