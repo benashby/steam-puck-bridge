@@ -152,7 +152,11 @@ Specifics:
   device is present.
 - **Connect/disconnect:** the dongle sends explicit wireless-status
   reports (`0x46`/`0x79`: byte = 1 disconnect, 2 connect). The virtual
-  pad is created/destroyed to match, so no ghost controllers linger.
+  pad is created at the first connect and kept while the dongle is
+  present. On a disconnect (the controller turned off or went to sleep)
+  every button is released and the sticks and triggers are centred, and
+  a reconnect resumes on the same pad, so a running game that ignores
+  hotplug keeps the controller. The pad goes away when the dongle does.
 - **State reports** (`0x42` USB, `0x45` BLE, `0x47` newer +timestamps):
   buttons (u32 bitfield), triggers (0..32767 → ABS_Z/ABS_RZ 0..255),
   both sticks (s16, up-positive → negated for evdev), d-pad bits → hat.
