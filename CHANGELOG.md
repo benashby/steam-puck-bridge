@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The virtual pad now outlives a controller's sleep. It used to be destroyed
+  on the wireless disconnect report and made again on reconnect, and a
+  running game that ignores hotplug (Arknights: Endfield under Proton) never
+  took the new pad until it restarted. Now the pad is released and centred
+  on disconnect, reused on reconnect, and destroyed only when the dongle
+  goes.
 - The README no longer says Linux 7.3 makes the bridge unnecessary. The
   kernel's puck gamepad has Valve's IDs, which Xbox-only games such as
   Unity titles don't map; the bridge takes over from it on 7.3.4 and those

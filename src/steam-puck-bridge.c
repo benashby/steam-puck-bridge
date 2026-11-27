@@ -39,8 +39,10 @@
  * --------
  *   - scans /sys/class/hidraw for VID 28DE, PID 1304/1305 (dongle: USB
  *     interfaces 2..5 = 4 controller slots) or PID 1302/1303 (wired/BLE)
- *   - one virtual X360 pad per slot, created on controller connect and
- *     destroyed on disconnect (so no ghost pads linger in ES-DE/games)
+ *   - one virtual X360 pad per slot, created on the first controller
+ *     connect and kept while the dongle is present: a controller that
+ *     sleeps and wakes comes back on the same pad, so a running game that
+ *     ignores hotplug keeps it. While asleep the pad holds a neutral state.
  *   - FF_RUMBLE force feedback is translated to Triton haptic-rumble output
  *     reports, re-sent every 40 ms (hardware safety timeout is ~50 ms)
  *   - if a real Steam client starts, the bridge backs off completely (Steam
@@ -431,6 +433,8 @@ static void emit(int fd, uint16_t type, uint16_t code, int32_t value)
     if (write(fd, &ev, sizeof(ev)) < 0) { /* non-fatal */ }
 }
 
+static void release_uinput(slot_t *s);
+
 static void set_connected(slot_t *s, bool connected)
 {
     if (s->connected == connected)
@@ -450,8 +454,8 @@ static void set_connected(slot_t *s, bool connected)
                 logts("virtual X-Box 360 pad created for %s", s->hidraw_path);
         }
     } else {
-        logts("controller disconnected on %s", s->hidraw_path);
-        destroy_uinput(s);
+        logts("controller disconnected on %s; pad kept", s->hidraw_path);
+        release_uinput(s);
     }
 }
 
@@ -477,6 +481,30 @@ static const struct btn_map button_map[] = {
     { BTN_TRITON_L5,    BTN_TRIGGER_HAPPY4 },
     { BTN_TRITON_QAM,   BTN_TRIGGER_HAPPY5 },
 };
+
+/* Release every button, centre the sticks and triggers and stop rumble,
+ * so a pad kept across a controller's sleep holds nothing down. */
+static void release_uinput(slot_t *s)
+{
+    static const uint16_t abs_codes[6] = { ABS_X, ABS_Y, ABS_RX, ABS_RY, ABS_Z, ABS_RZ };
+
+    s->rumble_active = false;
+    if (s->ui_fd < 0)
+        return;
+    for (size_t i = 0; i < sizeof(button_map) / sizeof(button_map[0]); i++)
+        if (s->last_buttons & button_map[i].bit)
+            emit(s->ui_fd, EV_KEY, button_map[i].key, 0);
+    for (int i = 0; i < 6; i++)
+        if (s->last_abs[i] != 0)
+            emit(s->ui_fd, EV_ABS, abs_codes[i], 0);
+    for (int i = 0; i < 2; i++)
+        if (s->last_hat[i] != 0)
+            emit(s->ui_fd, EV_ABS, i == 0 ? ABS_HAT0X : ABS_HAT0Y, 0);
+    emit(s->ui_fd, EV_SYN, SYN_REPORT, 0);
+    s->last_buttons = 0;
+    memset(s->last_abs, 0, sizeof(s->last_abs));
+    memset(s->last_hat, 0, sizeof(s->last_hat));
+}
 
 static int32_t neg16(int16_t v)   /* negate with INT16_MIN clamp */
 {
